@@ -1,4 +1,7 @@
-const isPlainObject = (obj: object, ObjectId: object) => {
+declare var expect: any
+declare var Reflect: any
+
+const isPlainObject = (obj: object, ObjectId): boolean => {
   if (
     typeof obj === 'object' && obj !== null &&
     ((ObjectId && !ObjectId.isValid(obj)) || true)
@@ -10,30 +13,34 @@ const isPlainObject = (obj: object, ObjectId: object) => {
   return false
 }
 
-const match = (constructor: object): object  => expect.any(constructor)
+const match = constructor  => expect.any(constructor)
 
-const propertiesMatcher = (obj: object, matchers: object, ObjectId: object) => {
+const propertiesMatcher = (obj: object, matchers: object, ObjectId): object => {
   obj = { ...obj }
 
   for (const prop in obj) {
     if (Array.isArray(obj[prop])) {
-      obj[prop] = match(matchers[prop])
-    } else {
-      obj[prop] = obj[prop].map(elm => {
-        if (ObjectId) {
+      if (matchers[prop]) {
+        obj[prop] = match(matchers[prop])
+      } else {
+        obj[prop] = obj[prop].map(elm => {
           if (isPlainObject(elm, ObjectId)) {
             return propertiesMatcher(elm, matchers, ObjectId)
-          } else if (ObjectId.isvalid(elm)) {
+          } else if (ObjectId && ObjectId.isValid(elm)) {
             return match(String)
           }
-        }
 
-        return elm
-      })
-    } else if (ObjectId && isPlainObject(obj[prop], ObjectId)) {
+          return elm
+        })
+      }
+    } else if (isPlainObject(obj[prop], ObjectId)) {
       obj[prop] = propertiesMatcher(obj[prop], matchers, ObjectId)
     } else {
       matchers[prop] && (obj[prop] = match(matchers[prop]))
     }
   }
+
+  return obj
 }
+
+export default propertiesMatcher
